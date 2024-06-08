@@ -26,24 +26,33 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=150, unique=True)
     first_name = models.CharField(max_length=30, blank=True)
     last_name = models.CharField(max_length=30, blank=True)
-    phone = PhoneNumberField(unique=True)
+    phone = PhoneNumberField()
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
     objects = CustomUserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
 
     def __str__(self):
         return self.email
 
 
+class UserType(models.IntegerChoices):
+    EMPLOYEE = 0, 'Сотрудник'
+    CUSTOMER = 1, 'Закзчик'
+
+
 class Customer(CustomUser):
+    user_type = models.BooleanField(default=UserType.CUSTOMER, choices=UserType.choices, verbose_name='Тип пользователя')
     class Meta:
         verbose_name = 'Заказчик'
+        verbose_name_plural = 'Заказчики'
 
 
 class Employee(CustomUser):
+    user_type = models.BooleanField(default=UserType.EMPLOYEE, choices=UserType.choices, verbose_name='Тип пользователя')
+
     class Meta:
         verbose_name = 'Сотрудник'
+        verbose_name_plural = 'Сотрудники'
