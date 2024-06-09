@@ -57,6 +57,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     employees = EmployeesManager()
     customers = CustomersManager()
 
+    photo = models.ImageField(upload_to='employee_photos/', null=True, blank=True)
+
     USERNAME_FIELD = "email"
 
     def __str__(self):
@@ -65,3 +67,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     class Meta:
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
+
+    def save(self, *args, **kwargs):
+        if self.user_type == self.UserType.EMPLOYEE and not self.is_staff:
+            if not self.photo:
+                raise ValueError("Employee photo is required.")
+        super().save(*args, **kwargs)

@@ -17,6 +17,10 @@ class UserDataSerializer(serializers.Serializer):
     def validate(self, data):
         if data["password"] != data["password_confirm"]:
             raise serializers.ValidationError("Passwords do not match")
+
+        if not data["photo"]:
+            raise serializers.ValidationError("Employee photo is required.")
+
         return data
 
     def create(self, validated_data):
@@ -24,6 +28,10 @@ class UserDataSerializer(serializers.Serializer):
         print(validated_data)
         user = CustomUser.objects.create_user(**validated_data)
         return user
+
+    class Meta:
+        model = CustomUser
+        fields = ['photo']
 
 
 class UserLoginSerializer(serializers.Serializer):
