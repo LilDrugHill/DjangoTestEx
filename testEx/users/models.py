@@ -1,14 +1,19 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import (
+    AbstractBaseUser,
+    BaseUserManager,
+    PermissionsMixin,
+)
 from phonenumber_field.modelfields import PhoneNumberField
 
 
 # Create your models here.
 
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
-            raise ValueError('The Email field must be set')
+            raise ValueError("The Email field must be set")
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
@@ -16,43 +21,47 @@ class CustomUserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("user_type", CustomUser.UserType.EMPLOYEE)
         return self.create_user(email, password, **extra_fields)
 
 
+class EmployeesManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(user_type=CustomUser.UserType.EMPLOYEE)
+
+
+class CustomersManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(user_type=CustomUser.UserType.CUSTOMER)
+
+
 class CustomUser(AbstractBaseUser, PermissionsMixin):
+    class UserType(models.IntegerChoices):
+        EMPLOYEE = 0, "Сотрудник"
+        CUSTOMER = 1, "Заказчик"
+
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=150, unique=True)
-    first_name = models.CharField(max_length=30, blank=True)
-    last_name = models.CharField(max_length=30, blank=True)
+    full_name = models.CharField(max_length=50, blank=True, verbose_name="ФИО")
     phone = PhoneNumberField()
+    user_type = models.BooleanField(
+        choices=UserType.choices,
+        verbose_name="Тип пользователя",
+    )
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
     objects = CustomUserManager()
+    employees = EmployeesManager()
+    customers = CustomersManager()
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "email"
 
     def __str__(self):
         return self.email
 
-
-class UserType(models.IntegerChoices):
-    EMPLOYEE = 0, 'Сотрудник'
-    CUSTOMER = 1, 'Закзчик'
-
-
-class Customer(CustomUser):
-    user_type = models.BooleanField(default=UserType.CUSTOMER, choices=UserType.choices, verbose_name='Тип пользователя')
     class Meta:
-        verbose_name = 'Заказчик'
-        verbose_name_plural = 'Заказчики'
-
-
-class Employee(CustomUser):
-    user_type = models.BooleanField(default=UserType.EMPLOYEE, choices=UserType.choices, verbose_name='Тип пользователя')
-
-    class Meta:
-        verbose_name = 'Сотрудник'
-        verbose_name_plural = 'Сотрудники'
+        verbose_name = "Пользователь"
+        verbose_name_plural = "Пользователи"
